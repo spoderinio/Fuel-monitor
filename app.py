@@ -9,6 +9,7 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.label import MDLabel
 from kivymd.uix.toolbar import MDToolbar
 import sqlite3
+from datetime import datetime
 
 
 class MonitorApp(MDApp):
@@ -23,6 +24,18 @@ class MonitorApp(MDApp):
             lpkm = fuel / km * 100
             self.converted.text = str(lpkm)
             self.label.text = "Consumtion per 100 km:"
+            now = datetime.now()
+            fuel_time = now.strftime("%d/%m/%Y")
+            money = price * fuel
+
+            conn = sqlite3.connect("fuel.db")
+            c = conn.cursor()
+            insert_with_params = ("INSERT INTO fillings(added_fuel, fuel_price, km_driven, liters_per_100km, money_spend, date) VALUES (?, ?, ?, ?, ?, ?)"
+                                  )
+            data_tuple = (fuel, price, km, lpkm, money, fuel_time)
+            c.execute(insert_with_params, data_tuple)
+            conn.commit()
+            conn.close()
 
         except ValueError:
             self.label.text = "Please enter valid inputs"
@@ -35,9 +48,14 @@ class MonitorApp(MDApp):
         c.execute("""CREATE TABLE if not exists fillings(
             id integer PRIMARY KEY,
             added_fuel integer NOT NULL,
+            km_driven integer,
             fuel_price integer,
-            liters_per_100km integer NOT NULL
+            liters_per_100km integer NOT NULL,
+            money_spend integer,
+            date text
         ); """)
+        conn.commit()
+        conn.close()
 
         self.state = 0
         self.theme_cls.primary_palette = "DeepOrange"
